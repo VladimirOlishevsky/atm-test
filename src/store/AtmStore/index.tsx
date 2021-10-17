@@ -1,12 +1,7 @@
 import {
-  observable, action, computed, makeAutoObservable
+  makeAutoObservable
 } from 'mobx';
 import { getRootStore } from '..';
-
-interface InitValue {
-  name: number,
-  count: number
-}
 
 type Operation = 'getFromAtm' | 'setToAtm' | 'setToAll' | 'getFromAll';
 
@@ -22,27 +17,8 @@ export class AtmStore {
   ]);
 
   constructor() {
-    makeAutoObservable(this, {
-      // academicYearId: observable,
-      // createdAt: observable,
-      // gradeSystemType: observable,
-      // id: observable,
-      // studentProfileId: observable,
-      // subjectName: observable,
-      // value: observable,
-      // fromApi: action,
-      atmInitValue: observable,
-      setAtmBalance: action,
-      valueFromBalance: action,
-      atmBalance: computed,
-      atmBalanceKeys: computed,
-      atmBalanceValues: computed
-    });
+    makeAutoObservable(this);
   }
-
-  // setAtmBalance = (key: number, value: number) => {
-  //   this.atmInitValue.set(key, value)
-  // }
 
   setAtmBalance = (key: number, value: number) => {
     this.atmInitValue.set(key, (this.atmInitValue.get(key) || 0) + value)
@@ -50,10 +26,6 @@ export class AtmStore {
 
   writeOffAtmBalance = (key: number, value: number) => {
     this.atmInitValue.set(key, (this.atmInitValue.get(key) || 0) - value)
-  }
-
-  resetBalance = () => {
-    this.atmInitValue = new Map()
   }
 
   valueFromBalance = (value: number) => {
@@ -68,10 +40,6 @@ export class AtmStore {
 
   get atmBalanceKeys(): number[] {
     return Array.from(this.atmInitValue.keys())
-  }
-
-  get atmBalanceValues(): number[] {
-    return Array.from(this.atmInitValue.values())
   }
 
   checkFunction = (checkValue: number, balanceKeys: number[], balance: Map<number, number>) => {
@@ -93,9 +61,143 @@ export class AtmStore {
     return differenceForCheck
   }
 
-  setToOneBalance = (type: Operation, inputValue: number, setinputValue: React.Dispatch<React.SetStateAction<string>>) => {
+  setToAllBalances = (inputValue: number, setInputValue: React.Dispatch<React.SetStateAction<string>>) => {
     const {
-      // atmStore: { atmInitValue, atmBalance, setAtmBalance, writeOffAtmBalance, atmBalanceKeys },
+      userStore: { setUserBalance, userBalanceKeys }
+    } = getRootStore();
+
+    let difference = inputValue;
+    const atmOperations = (diff: number, atmCell: number) => {
+      let notesNeed = Math.floor(diff / atmCell);
+
+      if (notesNeed) {
+        setUserBalance(atmCell, notesNeed);
+        this.setAtmBalance(atmCell, notesNeed)
+      } else {
+        return
+      }
+      difference = diff - notesNeed * atmCell
+      return difference
+    }
+
+    for (let el of this.atmBalanceKeys) {
+      let res = atmOperations(difference, el)
+      if (res) {
+        atmOperations(difference, el)
+      }
+    }
+
+    for (let el of userBalanceKeys) {
+      let res = atmOperations(difference, el)
+      if (res) {
+        atmOperations(difference, el)
+      }
+    }
+    setInputValue('')
+  }
+
+  writeOffFromAllBalances = (inputValue: number, setInputValue: React.Dispatch<React.SetStateAction<string>>) => {
+    const {
+      userStore: { userBalance, userInitValue, writeOffUserBalance, userBalanceKeys }
+    } = getRootStore();
+
+    if (inputValue > userBalance) {
+      console.log('Операция не может быть выполнена. На вашем балансе недостаточно средств')
+      return
+    } else if (inputValue > this.atmBalance) {
+      console.log('Операция не может быть выполнена. В банкомате нет достаточной суммы')
+      return
+    }
+
+    let difference = inputValue;
+    let difference1 = inputValue;
+    const atmOperations = (initValue: Map<number, number>, diff: number, atmCell: number, type: string) => {
+      let notesHave = initValue.get(atmCell) || 0;
+      let notesNeed = Math.floor(diff / atmCell);
+      let minNotesNeed = Math.min(notesHave, notesNeed);
+
+      if (notesHave && minNotesNeed) {
+        if (notesHave >= minNotesNeed) {
+          type === 'atm' && this.writeOffAtmBalance(atmCell, minNotesNeed)
+          type === 'user' && writeOffUserBalance(atmCell, minNotesNeed)
+        } else {
+          return
+        }
+      }
+
+      if (type === 'atm') {
+        difference = diff - minNotesNeed * atmCell
+        return difference
+      }
+      if (type === 'user') {
+        difference1 = diff - minNotesNeed * atmCell
+        return difference1
+      }
+    }
+
+    const resCheck = this.checkFunction(inputValue, this.atmBalanceKeys, this.atmInitValue);
+    const resCheck1 = this.checkFunction(inputValue, userBalanceKeys, userInitValue);
+
+    const cycleConfig = [
+      {
+        isHaveReminder: resCheck,
+        values: this.atmBalanceKeys,
+        initValue: this.atmInitValue,
+        diff: difference,
+        type: 'atm',
+        error: 'Операция не может быть выполнена. В банкомате нет необходимых купюр'
+      },
+      {
+        isHaveReminder: resCheck1,
+        values: userBalanceKeys,
+        initValue: userInitValue,
+        diff: difference1,
+        type: 'user',
+        error: 'Операция не может быть выполнена. У пользователя нет необходимых купюр'
+      },
+    ]
+
+    cycleConfig.forEach(item => {
+      for (let el of item.values) {
+        if (!resCheck) {
+          let res = atmOperations(item.initValue, item.diff, el, item.type)
+          if (res) {
+            atmOperations(item.initValue, item.diff, el, item.type)
+          }
+        } else {
+          console.log(item.error)
+          return
+        }
+      }
+    })
+
+    // for (let el of this.atmBalanceKeys) {
+    //   if (!resCheck) {
+    //     let res = atmOperations(this.atmInitValue, difference, el, 'atm')
+    //     if (res) {
+    //       atmOperations(this.atmInitValue, difference, el, 'atm')
+    //     }
+    //   } else {
+    //     console.log('Операция не может быть выполнена. В банкомате нет необходимых купюр')
+    //     return
+    //   }
+    // }
+
+    // for (let el of userBalanceKeys) {
+    //   if (!resCheck1) {
+    //     let res = atmOperations(userInitValue, difference1, el, 'user')
+    //     if (res) {
+    //       atmOperations(userInitValue, difference1, el, 'user')
+    //     }
+    //   } else {
+    //     console.log('Операция не может быть выполнена. У пользователя нет необходимых купюр')
+    //     return
+    //   }
+    // }
+  }
+
+  setToOneBalance = (type: Operation, inputValue: number, setInputValue: React.Dispatch<React.SetStateAction<string>>) => {
+    const {
       userStore: { userBalance, userInitValue, setUserBalance, writeOffUserBalance, userBalanceKeys }
     } = getRootStore();
 
@@ -133,25 +235,24 @@ export class AtmStore {
       difference = diff - minNotesNeed * atmCell
       return difference
     }
-    const resCheck = this.checkFunction(inputValue, initBalanceKeys, initValue)
-    console.log('resCheck', resCheck)
+
+    const resCheck = this.checkFunction(inputValue, initBalanceKeys, initValue);
     for (let el of initBalanceKeys) {
       if (!resCheck) {
         let res = atmOperations(difference, el)
         if (res) {
           atmOperations(difference, el)
         } else {
-          setinputValue('')
+          setInputValue('')
           return
         }
       } else {
-        if(type === 'setToAtm') {
+        if (type === 'setToAtm') {
           console.log('Операция не может быть выполнена. У вас нет необходимых купюр')
         }
-        if(type === 'getFromAtm') {
-           console.log('Операция не может быть выполнена. В банкомате нет необходимых купюр')
+        if (type === 'getFromAtm') {
+          console.log('Операция не может быть выполнена. В банкомате нет необходимых купюр')
         }
-       
         return
       }
     }

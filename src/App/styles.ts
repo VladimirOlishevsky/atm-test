@@ -13,10 +13,10 @@ export const getStyles = makeStyles(() => ({
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        fontSize: 'calc(10px + 2vmin)'
+        fontSize: 'calc(10px + 2vmin)',
+        gap: 50
     },
     input: {
-        marginBottom: 100,
         '& .MuiInputLabel-root': {
             color: "beige"
           },
@@ -33,21 +33,14 @@ export const getStyles = makeStyles(() => ({
             borderBottomColor: '#fff',
         },
     },
-
-    card: {
-        display: 'flex',
-        borderRadius: 32,
-        backgroundColor: '#fff',
-        width: 400,
-        height: 200,
-        color: '#000',
-        flexDirection: 'column',
-        boxSizing: 'border-box',
-        gap: 16,
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 32,
-        marginBottom: 100
+    atmService: {
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: 40
+    },
+    buttonGroup: {
+        display: 'flex', 
+        gap: 32
     },
     container: {
         width: '50%',
