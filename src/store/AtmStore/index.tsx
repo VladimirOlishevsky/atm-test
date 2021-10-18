@@ -1,20 +1,21 @@
 import {
   makeAutoObservable
 } from 'mobx';
+import { INotes, Operation } from 'src/constants';
 import { getRootStore } from '..';
-
-type Operation = 'getFromAtm' | 'setToAtm' | 'setToAll' | 'getFromAll';
 
 export class AtmStore {
 
   atmInitValue = new Map([
-    [5000, 0],
-    [2000, 0],
-    [1000, 3],
+    [5000, 4],
+    [2000, 6],
+    [1000, 9],
     [500, 8],
-    [200, 0],
-    [100, 0]
+    [200, 2],
+    [100, 5]
   ]);
+
+  tooltip = '';
 
   constructor() {
     makeAutoObservable(this);
@@ -40,6 +41,22 @@ export class AtmStore {
 
   get atmBalanceKeys(): number[] {
     return Array.from(this.atmInitValue.keys())
+  }
+
+  get arrayFromAtmBalance(): INotes[] {
+    const arr = this.atmBalanceKeys.map(el => ({
+      type: el,
+      value: this.atmInitValue.get(el)
+    }))
+    return arr
+  }
+
+  setTooltip = (value: string) => {
+    this.tooltip = value;
+  }
+
+  resetTooltip = () => {
+    this.tooltip = '';
   }
 
   checkFunction = (checkValue: number, balanceKeys: number[], balance: Map<number, number>) => {
@@ -93,7 +110,8 @@ export class AtmStore {
         atmOperations(difference, el)
       }
     }
-    setInputValue('')
+    setInputValue('');
+    this.resetTooltip();
   }
 
   writeOffFromAllBalances = (inputValue: number, setInputValue: React.Dispatch<React.SetStateAction<string>>) => {
@@ -102,10 +120,10 @@ export class AtmStore {
     } = getRootStore();
 
     if (inputValue > userBalance) {
-      console.log('Операция не может быть выполнена. На вашем балансе недостаточно средств')
+      this.setTooltip('Операция не может быть выполнена. На вашем балансе недостаточно средств')
       return
     } else if (inputValue > this.atmBalance) {
-      console.log('Операция не может быть выполнена. В банкомате нет достаточной суммы')
+      this.setTooltip('Операция не может быть выполнена. В банкомате нет достаточной суммы')
       return
     }
 
@@ -124,7 +142,6 @@ export class AtmStore {
           return
         }
       }
-
       if (type === 'atm') {
         difference = diff - minNotesNeed * atmCell
         return difference
@@ -135,77 +152,48 @@ export class AtmStore {
       }
     }
 
-    const resCheck = this.checkFunction(inputValue, this.atmBalanceKeys, this.atmInitValue);
-    const resCheck1 = this.checkFunction(inputValue, userBalanceKeys, userInitValue);
+    const resultCheckAtm = this.checkFunction(inputValue, this.atmBalanceKeys, this.atmInitValue);
+    const resultCheckUser = this.checkFunction(inputValue, userBalanceKeys, userInitValue);
 
-    const cycleConfig = [
-      {
-        isHaveReminder: resCheck,
-        values: this.atmBalanceKeys,
-        initValue: this.atmInitValue,
-        diff: difference,
-        type: 'atm',
-        error: 'Операция не может быть выполнена. В банкомате нет необходимых купюр'
-      },
-      {
-        isHaveReminder: resCheck1,
-        values: userBalanceKeys,
-        initValue: userInitValue,
-        diff: difference1,
-        type: 'user',
-        error: 'Операция не может быть выполнена. У пользователя нет необходимых купюр'
-      },
-    ]
-
-    cycleConfig.forEach(item => {
-      for (let el of item.values) {
-        if (!resCheck) {
-          let res = atmOperations(item.initValue, item.diff, el, item.type)
-          if (res) {
-            atmOperations(item.initValue, item.diff, el, item.type)
-          }
-        } else {
-          console.log(item.error)
+    for (let el of this.atmBalanceKeys) {
+      if (!resultCheckAtm && !resultCheckUser) {
+        let res = atmOperations(this.atmInitValue, difference, el, 'atm')
+        if (res) {
+          atmOperations(this.atmInitValue, difference, el, 'atm')
+        }
+      } else {
+        if (resultCheckAtm) {
+          this.setTooltip('Операция не может быть выполнена. В банкомате нет необходимых купюр');
+          return
+        }
+        if (resultCheckUser) {
+          this.setTooltip('Операция не может быть выполнена. У пользователя нет необходимых купюр')
           return
         }
       }
-    })
+    }
 
-    // for (let el of this.atmBalanceKeys) {
-    //   if (!resCheck) {
-    //     let res = atmOperations(this.atmInitValue, difference, el, 'atm')
-    //     if (res) {
-    //       atmOperations(this.atmInitValue, difference, el, 'atm')
-    //     }
-    //   } else {
-    //     console.log('Операция не может быть выполнена. В банкомате нет необходимых купюр')
-    //     return
-    //   }
-    // }
+    for (let el of userBalanceKeys) {
+      let res = atmOperations(userInitValue, difference1, el, 'user')
+      if (res) {
+        atmOperations(userInitValue, difference1, el, 'user')
+      }
+    }
 
-    // for (let el of userBalanceKeys) {
-    //   if (!resCheck1) {
-    //     let res = atmOperations(userInitValue, difference1, el, 'user')
-    //     if (res) {
-    //       atmOperations(userInitValue, difference1, el, 'user')
-    //     }
-    //   } else {
-    //     console.log('Операция не может быть выполнена. У пользователя нет необходимых купюр')
-    //     return
-    //   }
-    // }
+    setInputValue('');
+    this.resetTooltip();
   }
 
-  setToOneBalance = (type: Operation, inputValue: number, setInputValue: React.Dispatch<React.SetStateAction<string>>) => {
+  atmUserOperations = (type: Operation, inputValue: number, setInputValue: React.Dispatch<React.SetStateAction<string>>) => {
     const {
       userStore: { userBalance, userInitValue, setUserBalance, writeOffUserBalance, userBalanceKeys }
     } = getRootStore();
 
     if (inputValue > userBalance) {
-      console.log('Операция не может быть выполнена. На вашем балансе недостаточно средств')
+      this.setTooltip('Операция не может быть выполнена. На вашем балансе недостаточно средств. Введите другую сумму или верните карту')
       return
     } else if (inputValue > this.atmBalance && type === 'getFromAtm') {
-      console.log('Операция не может быть выполнена. В банкомате нет достаточной суммы')
+      this.setTooltip('Операция не может быть выполнена. В банкомате нет достаточной суммы. Введите другую сумму или верните карту')
       return
     }
 
@@ -243,15 +231,16 @@ export class AtmStore {
         if (res) {
           atmOperations(difference, el)
         } else {
-          setInputValue('')
+          setInputValue('');
+          this.resetTooltip();
           return
         }
       } else {
         if (type === 'setToAtm') {
-          console.log('Операция не может быть выполнена. У вас нет необходимых купюр')
+          this.setTooltip('Операция не может быть выполнена. У вас нет необходимых купюр. Введите другую сумму или верните карту')
         }
         if (type === 'getFromAtm') {
-          console.log('Операция не может быть выполнена. В банкомате нет необходимых купюр')
+          this.setTooltip('Операция не может быть выполнена. В банкомате нет необходимых купюр. Введите другую сумму или верните карту')
         }
         return
       }

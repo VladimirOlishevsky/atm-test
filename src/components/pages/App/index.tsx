@@ -1,40 +1,43 @@
 import React, { useState } from 'react';
-import { TextField } from '@material-ui/core';
+import { TextField, Typography } from '@material-ui/core';
 import { getStyles } from './styles';
-import { getRootStore } from '../store';
 import { observer } from 'mobx-react-lite';
-import { Card } from './Card';
-import { AtmTitle } from './AtmTitle';
-import { ButtonGroup } from './ButtonGroup';
+import { getRootStore } from 'src/store';
+import { defaultPincode, Operation } from 'src/constants';
+import { AtmTitle, Balances, ButtonGroup, Card } from 'src/components';
 
-type Operation = 'getFromAtm' | 'setToAtm' | 'setToAll' | 'getFromAll';
 
 export const App = observer(() => {
 
-    const [mainValue, setMainValue] = useState('');
+    const [inputValue, setInputValue] = useState('');
     const [pincode, setPincode] = useState('');
     const [enteredCard, setEnteredCard] = useState(false);
     const [openAtmField, setOpenAtmField] = useState(false);
 
     const classes = getStyles();
     const {
-        atmStore: { setToOneBalance, setToAllBalances, writeOffFromAllBalances },
+        atmStore: { atmUserOperations, setToAllBalances, writeOffFromAllBalances, tooltip, setTooltip, resetTooltip },
     } = getRootStore();
 
     const personalAction = (type: Operation) => {
-        setToOneBalance(type, Number(mainValue), setMainValue)
+        atmUserOperations(type, Number(inputValue), setInputValue)
     }
     const setToAll = () => {
-        setToAllBalances(Number(mainValue), setMainValue)
+        setToAllBalances(Number(inputValue), setInputValue)
     }
     const writeOffFromAll = () => {
-        writeOffFromAllBalances(Number(mainValue), setMainValue)
+        writeOffFromAllBalances(Number(inputValue), setInputValue)
     }
     const checkPincode = () => {
-        if (pincode === '0000') {
+        if (pincode === defaultPincode) {
+            resetTooltip();
             setPincode('');
+            setInputValue('');
             setOpenAtmField(true);
+        } else {
+            setTooltip('Неверный пинкод. Попробуйте еще раз')
         }
+
     };
     const enterCard = () => {
         setEnteredCard(!enteredCard)
@@ -50,7 +53,7 @@ export const App = observer(() => {
             type: 'personal',
             title: 'Внести',
             onClick: () => personalAction('setToAtm')
-        }, 
+        },
         {
             type: 'all',
             title: 'Внести на все',
@@ -69,6 +72,8 @@ export const App = observer(() => {
             {enteredCard &&
                 <Card
                     openAtmField={openAtmField}
+                    setOpenAtmField={setOpenAtmField}
+                    setEnteredCard={setEnteredCard}
                     pincode={pincode}
                     setPincode={setPincode}
                     checkPincode={checkPincode} />}
@@ -77,12 +82,17 @@ export const App = observer(() => {
                 <div className={classes.atmService}>
                     <TextField
                         autoFocus
-                        value={mainValue}
+                        value={inputValue}
                         className={classes.input}
-                        onChange={(e) => setMainValue(e.currentTarget.value)} />
+                        onChange={(e) => setInputValue(e.currentTarget.value)} />
+                    {tooltip && <div style={{ display: 'flex', width: 250, justifyContent: 'center' }}>
+                        <Typography>{tooltip}</Typography>
+                    </div>}
                     <ButtonGroup buttonConfig={buttonsConfig.filter(el => el.type === 'personal')} />
                     <ButtonGroup buttonConfig={buttonsConfig.filter(el => el.type === 'all')} />
                 </div>}
+
+            {openAtmField && <Balances />}
         </div>
     );
 })

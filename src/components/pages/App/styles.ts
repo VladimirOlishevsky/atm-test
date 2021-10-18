@@ -6,7 +6,7 @@ import {
 export const getStyles = makeStyles(() => ({
     app: {
         color: 'rgba(245,245,220,0.7)',
-        paddingTop: 100,
+        padding: '100px 0px 100px',
         textAlign: 'center',
         backgroundColor: '#282c34',
         minHeight: '100vh',
@@ -17,6 +17,7 @@ export const getStyles = makeStyles(() => ({
         gap: 50
     },
     input: {
+        width: 250,
         '& .MuiInputLabel-root': {
             color: "beige"
           },
