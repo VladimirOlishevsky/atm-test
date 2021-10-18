@@ -1,6 +1,14 @@
 <h1 align="center">Atm operations</h1>
 
+<h1 align="center">
+
+[![Build status](https://ci.appveyor.com/api/projects/status/a48qn26oxu1s3axv?svg=true)](https://ci.appveyor.com/project/VladimirOlishevsky/atm-test)
+
+</h1>
+
 <img src="./assets/atm.gif" width="100%">
+
+<h1 align="center"><a href="https://github.com/VladimirOlishevsky/atm-test.git">Live Demo</a></h1>
 
 ## Description
 
