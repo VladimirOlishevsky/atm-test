@@ -8,8 +8,6 @@
 
 <img src="./assets/atm.gif" width="100%">
 
-<h1 align="center"><a href="https://vladimirolishevsky.github.io/atm-test/">Live Demo</a></h1>
-
 ## Description
 
 The ATM has a cassette for banknotes. Banknote denominations: 100, 200, 500, 1000, 2000 and 5000 rubles. There is also a customer who is served by an ATM. The client has a wallet. The client's wallet contains banknotes of the same denomination as in the ATM.
