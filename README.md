@@ -8,7 +8,7 @@
 
 <img src="./assets/atm.gif" width="100%">
 
-<h1 align="center"><a href="https://github.com/VladimirOlishevsky/atm-test.git">Live Demo</a></h1>
+<h1 align="center"><a href="https://vladimirolishevsky.github.io/atm-test/">Live Demo</a></h1>
 
 ## Description
 
