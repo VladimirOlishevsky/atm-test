@@ -1,6 +1,7 @@
 {
   "name": "atm-test",
   "version": "0.1.0",
+  "homepage": "https://vladimirolishevsky.github.io/atm-test/",
   "private": true,
   "source": "src/index.ts",
   "dependencies": {
